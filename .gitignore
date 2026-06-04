@@ -4,3 +4,6 @@ dist/
 **/*.rs.bk
 .SRCINFO
 id_ed25519
+
+# Other files
+*.ignore.txt

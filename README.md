@@ -94,7 +94,7 @@ rcage run -r soda-9.0-1 -p my_prefix -d ~/games/some_game -w '*\Game-Win64.exe' 
 * Do I need Bottles in order to use raptor-cage?  
   No, Bottles is not needed, although is highly recommended in order to manage Wine/Proton versions and dependencies. If you don't want to use Bottles, you can download any Wine/Proton version you like, extract it anywhere and choose the respective path when running raptor-cage (`-r`).
 * What is the difference with Bubblewrap?  
-  Bubblewrap (bwrap) is used under the hood by raptor-cage, you could use bwrap directly too, however it would require careful configuration of dozens of parameters.
+  Bubblewrap (bwrap) is used under the hood by raptor-cage, you could use bwrap directly too, however it would require careful configuration of hundreds of parameters.
 * Do I need Steam in order to use raptor-cage?  
   Not at all, raptor-cage objective is to allow the user to run games in a sandbox without relying on closed-source or corporate launchers/tools.
 * You say that Steam is not required, but I still need to install `steam` on ArchLinux  
@@ -121,6 +121,27 @@ Make sure to have 32-bit libraries installed i.e., `lib32-nvidia-utils`.
 Most likely some 32-bit libraries are not present on the system, these libraries are usually included in the Bottles flatpak, however they need to be installed outside flatpak if running manually via bubblewrap, on Arch you can install `wine` (for the sake of pulling all required 32-bit libraries as dependencies) or install `steam` which is basically what we need.
 
 Also, this may happen because "wine" is a 32-bit binary that executes "wine64" on 64-bit systems, this is not a bubblewrap issue, it's just that many applications (even 64-bit ones) rely or depend on other smaller 32-bit applications. For example, the installer for 64-bit Notepad++ is a 32-bit executable.
+
+**Command fails with "bwrap: setting up uid map: Permission denied"**
+
+Error happens because AppArmor prevents `bwrap` from creating user namespaces, this can be fixed by telling AppArmor to not interfere with `bwrap`.
+
+```conf
+# /etc/apparmor.d/bwrap
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/bwrap>
+}
+```
+
+**Message "groups: cannot find name for group ID ..." gets printed when executing a sandboxed shell**
+
+Harmless message that can be printed on some distributions (e.g., Ubuntu), it happens because the sandboxed processes run using a random user and group ID.
 
 ## ⚙️ Development
 
@@ -170,7 +191,7 @@ cargo upgrade --dry-run
 #### Packaging
 
 * cURL install script.
-* Create deb package. It should depend on Steam libraries (similarly to Arch's `steam-native-runtime`), see https://packages.ubuntu.com/search?keywords=steam&searchon=names&suite=noble&section=all.
+* Create deb package. It should depend on Steam libraries (similarly to Arch's `steam`), see https://packages.ubuntu.com/search?keywords=steam&searchon=names&suite=noble&section=all.
 * Make a reusable lib version (`Cargo.lock` needs to be ignored, see https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html).
 
 #### Maybe
