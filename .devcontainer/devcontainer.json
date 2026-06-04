@@ -38,8 +38,7 @@
 				"rust-lang.rust-analyzer",
 				"tamasfe.even-better-toml",
 				"vadimcn.vscode-lldb",
-				"streetsidesoftware.code-spell-checker",
-				"eamodio.gitlens@17.2.1"
+				"streetsidesoftware.code-spell-checker"
 			]
 		}
 	},
