@@ -3,8 +3,11 @@ use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
 
 // https://github.com/rust-lang/cargo/blob/4c06c57d0dc303b2bc93a5a52f5b962cae48bbce/crates/cargo-util/src/paths.rs#L84.
-fn normalize_path(path: &Path) -> PathBuf {
-  let mut components = path.components().peekable();
+fn normalize_path<P>(path: P) -> PathBuf
+where
+  P: AsRef<Path>,
+{
+  let mut components = path.as_ref().components().peekable();
   let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
     components.next();
     PathBuf::from(c.as_os_str())
@@ -122,6 +125,42 @@ mod tests {
   use std::str::FromStr;
 
   #[test]
+  fn test_absolute_path() {
+    let result = normalize_path("/home/user/../user/docs");
+    assert_eq!(result, PathBuf::from("/home/user/docs"));
+  }
+
+  #[test]
+  fn test_relative_path() {
+    let result = normalize_path("docs/../user/docs");
+    assert_eq!(result, PathBuf::from("user/docs"));
+  }
+
+  #[test]
+  fn test_redundant_slashes() {
+    let result = normalize_path("/////home//user///docs///file.txt");
+    assert_eq!(result, PathBuf::from("/home/user/docs/file.txt"));
+  }
+
+  #[test]
+  fn test_current_directory() {
+    let result = normalize_path("docs/./user/././file.txt");
+    assert_eq!(result, PathBuf::from("docs/user/file.txt"));
+  }
+
+  #[test]
+  fn test_empty_path() {
+    let result = normalize_path("");
+    assert_eq!(result, PathBuf::from(""));
+  }
+
+  #[test]
+  fn test_parent_directory() {
+    let result = normalize_path("docs/../user/../file.txt");
+    assert_eq!(result, PathBuf::from("file.txt"));
+  }
+
+  #[test]
   fn test_mount_config_parsing() {
     let test_cases = vec![
       ("", Err(MountError::EmptyPath)),
@@ -179,30 +218,12 @@ mod tests {
       ("::rw", Err(MountError::EmptyPath)),
       ("/test:", Err(MountError::EmptyPath)),
       (":/test", Err(MountError::EmptyPath)),
-      (
-        "/:/test",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
-      (
-        "/./:/test",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
-      (
-        "/data/:/",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
-      (
-        "/data/:/./",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
-      (
-        "/data/:/./:",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
-      (
-        "/data/:/./:rw",
-        Err(MountError::DisallowedPath(PathBuf::from("/"))),
-      ),
+      ("/:/test", Err(MountError::DisallowedPath(PathBuf::from("/")))),
+      ("/./:/test", Err(MountError::DisallowedPath(PathBuf::from("/")))),
+      ("/data/:/", Err(MountError::DisallowedPath(PathBuf::from("/")))),
+      ("/data/:/./", Err(MountError::DisallowedPath(PathBuf::from("/")))),
+      ("/data/:/./:", Err(MountError::DisallowedPath(PathBuf::from("/")))),
+      ("/data/:/./:rw", Err(MountError::DisallowedPath(PathBuf::from("/")))),
       ("data", Err(MountError::InvalidFormat("data".into()))),
       (
         "./:/test",

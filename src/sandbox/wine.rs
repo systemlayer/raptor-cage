@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
 use std::{fmt, fs, io};
 
@@ -167,6 +167,7 @@ pub fn get_wine_user(wine_prefix: &Path, fallback_user: &str) -> io::Result<Stri
     fallback_user.to_lowercase(),
   ];
   let users_path = wine_prefix.join("drive_c").join("users");
+  let mut user = fallback_user.to_string();
   for entry in fs::read_dir(&users_path)? {
     let path = entry?.path();
     if !path.is_dir() {
@@ -174,11 +175,20 @@ pub fn get_wine_user(wine_prefix: &Path, fallback_user: &str) -> io::Result<Stri
     }
     if let Some(dir_name) = path.file_name().and_then(|name| name.to_str()) {
       if !blacklist.contains(&dir_name.to_lowercase()) {
-        return Ok(dir_name.to_string());
+        user = dir_name.to_string();
+        break;
       }
     }
   }
-  Ok(fallback_user.to_string())
+  let mut user_components = Path::new(&user).components();
+  let first_component_is_invalid = !matches!(user_components.next(), Some(Component::Normal(_)));
+  if first_component_is_invalid || user_components.next().is_some() {
+    return Err(io::Error::new(
+      io::ErrorKind::InvalidData,
+      "Wine user must be a single path component",
+    ));
+  }
+  Ok(user)
 }
 
 pub fn is_windows_binary<P: AsRef<Path>>(app_bin: P) -> bool {
@@ -191,6 +201,18 @@ pub fn is_windows_binary<P: AsRef<Path>>(app_bin: P) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use tempfile::tempdir;
+
+  #[test]
+  fn test_get_wine_user_rejects_invalid_fallback_user_paths() {
+    let prefix = tempdir().unwrap();
+    fs::create_dir_all(prefix.path().join("drive_c/users")).unwrap();
+    for user in ["../player", "/player", ".", ""] {
+      let error = get_wine_user(prefix.path(), user).err().unwrap();
+      assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+      assert_eq!(error.to_string(), "Wine user must be a single path component");
+    }
+  }
 
   #[test]
   fn test_exe_extensions() {
@@ -217,5 +239,23 @@ mod tests {
   fn test_weird_extensions() {
     assert!(!is_windows_binary("file.exe.backup"));
     assert!(is_windows_binary("file.with.many.dots.exe"));
+  }
+}
+
+/// Paths and user information for a Wine prefix.
+pub struct WinePrefixInfo {
+  /// Path to the Wine prefix.
+  pub path: PathBuf,
+  /// Windows user detected in the prefix.
+  pub user: String,
+  /// Home directory of the detected Windows user.
+  pub home: PathBuf,
+}
+
+impl WinePrefixInfo {
+  pub fn new(path: PathBuf, fallback_user: &str) -> io::Result<Self> {
+    let user = get_wine_user(&path, fallback_user)?;
+    let home = path.join("drive_c").join("users").join(&user);
+    Ok(Self { path, user, home })
   }
 }

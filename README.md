@@ -68,6 +68,28 @@ rcage run -r soda-9.0-1 -p my_prefix -d ~/games/some_game -b /usr/bin/rcage -- w
 rcage run -r soda-9.0-1 -p my_prefix -d ~/games/some_game -w '*\Game-Win64.exe' -b Launcher.exe
 ```
 
+### Placeholders
+
+Placeholders can be used in game directory (`-d`) and volume mapping (`-v`) paths. Define custom placeholders in `rcage.toml` under the `[placeholders]` table, then reference them by surrounding their names with `@`:
+
+```toml
+[placeholders]
+GAMES_ROOT = "/mnt/games"
+SAVES_ROOT = "/mnt/saves"
+```
+
+```bash
+rcage run -d '{{GAMES_ROOT}}/some_game:rw' -v '{{SAVES_ROOT}}/some_game:/saves:rw' -b game.exe
+```
+
+In this example, `{{GAMES_ROOT}}/some_game` resolves to `/mnt/games/some_game`, while the game's save directory at `/mnt/saves/some_game` is mounted as `/saves` inside the sandbox. Unknown or malformed placeholders cause the command to fail.
+
+The first `rcage.toml` is loaded in this order:
+
+1. The current working directory.
+2. `$XDG_CONFIG_HOME/rcage.toml`, when `XDG_CONFIG_HOME` is set.
+3. `$HOME/.config/rcage.toml`.
+
 ### `rcage run` Enum Parameters
 
 * --network-mode:

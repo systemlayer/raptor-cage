@@ -38,6 +38,14 @@ pub fn get_data_root() -> anyhow::Result<PathBuf> {
   Ok(data_path)
 }
 
+/// Resolves a path relative to a directory in the Bottles data root.
+pub fn resolve_path(path: PathBuf, directory: &str) -> anyhow::Result<PathBuf> {
+  if path.is_absolute() {
+    return Ok(path);
+  }
+  Ok(get_data_root()?.join(directory).join(path))
+}
+
 pub fn list_prefixes(data_root: &Path) -> anyhow::Result<Vec<String>> {
   let prefixes_dir = data_root.join("bottles");
   let result = list_directories(&prefixes_dir);

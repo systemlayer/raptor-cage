@@ -1,9 +1,5 @@
-use super::bottles;
 use super::user_mapping::UserMapping;
-use super::wine::{SyncMode, UpscaleMode, is_windows_binary};
-use anyhow::Context;
-use std::collections::HashMap;
-use std::env;
+use super::wine::{SyncMode, UpscaleMode, WinePrefixInfo, is_windows_binary};
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -65,57 +61,6 @@ impl FromStr for DeviceAccess {
       "minimal" | "m" => Ok(DeviceAccess::Minimal),
       _ => Err(format!("Invalid device access mode: {}", s)),
     }
-  }
-}
-
-/// Retrieves an env variable and maps the error if not found, the difference between this method
-/// and using directly env::var is that this method mentions the variable name in the error.
-fn get_env_var(name: &str) -> anyhow::Result<String> {
-  env::var(name).with_context(|| format!("Failed to read environment variable: {}", name))
-}
-
-pub struct RuntimeEnv {
-  pub home_dir: String,
-  pub user_name: String,
-  pub lang: String,
-  pub dbus_session_bus_address: String,
-  /// Path that contains socket and lock files. This includes the Wayland socket.
-  pub xdg_runtime_dir: String,
-  /// Represents the unmodified value of the PATH variable.
-  pub original_path: String,
-  /// X11 display address, can look like `:0`, `:1` or `localhost:0.0`.
-  pub x11_display: Option<String>,
-  /// Needed on X11 sessions, and by Gamescope.
-  pub xauthority_file: Option<String>,
-  /// Wayland display socket name, looks like `wayland-0`.
-  pub wayland_display: Option<String>,
-  /// Additional env variables set (e.g. set by the user or Bottles).
-  pub overrides: Option<HashMap<String, String>>,
-}
-
-impl RuntimeEnv {
-  pub fn from_env() -> anyhow::Result<Self> {
-    let home_dir = get_env_var("HOME")?;
-    let user_name = get_env_var("USER")?;
-    let lang = env::var("LANG").unwrap_or("en_US.UTF-8".to_owned());
-    let dbus_session_bus_address = get_env_var("DBUS_SESSION_BUS_ADDRESS")?;
-    let xdg_runtime_dir = get_env_var("XDG_RUNTIME_DIR")?;
-    let original_path = get_env_var("PATH")?;
-    let x11_display = env::var("DISPLAY").ok();
-    let xauthority_file = env::var("XAUTHORITY").ok();
-    let wayland_display = env::var("WAYLAND_DISPLAY").ok();
-    Ok(Self {
-      home_dir,
-      user_name,
-      lang,
-      dbus_session_bus_address,
-      xdg_runtime_dir,
-      original_path,
-      x11_display,
-      xauthority_file,
-      wayland_display,
-      overrides: None,
-    })
   }
 }
 
@@ -232,43 +177,12 @@ impl LaunchParams {
 pub struct LaunchConfig {
   /// Full path to the wine runner.
   pub runner_path: Option<PathBuf>,
-  /// Full path to the wine prefix.
-  pub prefix_path: Option<PathBuf>,
+  /// Paths and user information for the Wine prefix.
+  pub prefix_info: Option<WinePrefixInfo>,
   /// Application to execute inside the sandbox, if not set, a shell will be started instead.
   pub launch_params: LaunchParams,
   /// Optional upscale mode (needs to be supported by the runner).
   pub upscale_mode: Option<UpscaleMode>,
   /// Optional Wine sync mode.
   pub sync_mode: Option<SyncMode>,
-}
-
-impl LaunchConfig {
-  pub fn new(
-    runner_path: Option<PathBuf>,
-    prefix_path: Option<PathBuf>,
-    launch_params: LaunchParams,
-    upscale_mode: Option<UpscaleMode>,
-    sync_mode: Option<SyncMode>,
-  ) -> anyhow::Result<Self> {
-    let data_root: Option<PathBuf> = if runner_path.is_some() || prefix_path.is_some() {
-      Some(bottles::get_data_root()?)
-    } else {
-      None
-    };
-    let runner_path = runner_path.map(|path| match &data_root {
-      Some(data_root) if !path.is_absolute() => data_root.join("runners").join(path),
-      _ => path,
-    });
-    let prefix_path = prefix_path.map(|path| match &data_root {
-      Some(data_root) if !path.is_absolute() => data_root.join("bottles").join(path),
-      _ => path,
-    });
-    Ok(LaunchConfig {
-      runner_path,
-      prefix_path,
-      launch_params,
-      upscale_mode,
-      sync_mode,
-    })
-  }
 }
