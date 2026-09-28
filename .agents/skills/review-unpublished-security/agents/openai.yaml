@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review Commit Range for Security"
+  short_description: "Audit a supplied Git commit range for security risks"
+  default_prompt: "Use $review-unpublished-security to perform a read-only audit of <commit-range> for security issues or suspicious code."
+
+policy:
+  allow_implicit_invocation: false
