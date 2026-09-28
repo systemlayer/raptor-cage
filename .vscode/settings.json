@@ -1,15 +1,4 @@
 {
-  "gitlens.telemetry.enabled": false,
-  "gitlens.ai.enabled": false,
-  "gitlens.showWhatsNewAfterUpgrades": false,
-  "gitlens.plusFeatures.enabled": false,
-  "gitlens.currentLine.pullRequests.enabled": false,
-  "gitlens.codeLens.enabled": false,
-  "gitlens.hovers.currentLine.over": "line",
-  "gitlens.launchpad.indicator.enabled": false,
-  "gitlens.cloudPatches.enabled": false,
-  "gitlens.views.repositories.showStashes": true,
-  "gitlens.views.repositories.showBranches": false,
   "cSpell.words": [
     "borderless",
     "Bubblewrap",
