@@ -222,3 +222,7 @@ cargo upgrade --dry-run
 * Investigate a way to use `--new-session` while allowing the user to read the output, without relying on seccomp, probably an easy fix could be to create an HTTP server where the output can be seen.
 * Fork `steam` and remove Steam related stuff (i.e., keep dependencies only) and implement GitHub Actions for update checking and deployment to the AUR. This would prevent the `pacman.conf` workaround described in the FAQ. Note: previously `steam-native-runtime` was used, however it was removed from Arch official packages on early 2026, unlike `steam`, this package included just the needed dependencies, `steam` includes some extra stuff not really needed like `steam-devices` and `zenity`.
 * Create overlay filesystem on top of game directory in order to allow writing data without affecting the underlying files (could be used instead of `:rw`).
+
+## License
+
+[MIT](https://opensource.org/license/mit)

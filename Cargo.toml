@@ -3,7 +3,7 @@ name = "raptor-cage"
 description = "Run games in a secure sandbox"
 version = "1.0.7"
 edition = "2024"
-license = "CIL-1.0"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
