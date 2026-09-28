@@ -6,6 +6,8 @@
 	"dockerFile": "Dockerfile",
 	"build": {
 		"args": {
+			"CODEX_URL": "https://raw.githubusercontent.com/openai/codex/refs/tags/rust-v0.146.0/scripts/install/install.sh",
+			"CODEX_SHA256": "ba92dd27e5c06f0d3bbc58bfa4b9cfb6599cd2742fbb1f92a2765e6c07dedb5a",
 			// Even if Rust compiler tries to make the final applications as statically linked as
 			// possible, some crates (like reqwest) depend on external libraries like OpenSSL, this can be
 			// "fixed" by using a vendored OpenSSL (see Cargo.toml); however, the vendored OpenSSL will
@@ -14,17 +16,9 @@
 			// container without cache).
 			// Variant syntax is CONTAINER_VERSION-RUST_VERSION-BASE_OS.
 			// To update container see https://github.com/devcontainers/images/tree/main/src/rust.
-			"VARIANT": "1-1-bookworm"
+			"VARIANT": "2-1-bookworm"
 		}
 	},
-	// Use 'mounts' to make the cargo cache persistent in a Docker Volume.
-	// "mounts": [
-	// 	{
-	// 		"source": "devcontainer-cargo-cache-${devcontainerId}",
-	// 		"target": "/usr/local/cargo",
-	// 		"type": "volume"
-	// 	}
-	// ]
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -38,8 +32,7 @@
 				"rust-lang.rust-analyzer",
 				"tamasfe.even-better-toml",
 				"vadimcn.vscode-lldb",
-				"streetsidesoftware.code-spell-checker",
-				"eamodio.gitlens@17.2.1"
+				"streetsidesoftware.code-spell-checker"
 			]
 		}
 	},

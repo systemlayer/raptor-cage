@@ -1,15 +1,13 @@
-use super::display::X11Display;
 use super::mount::MountMapping;
 use super::sandbox::DisplayProtocol;
-use super::sandbox::{
-  DeviceAccess, LaunchConfig, LaunchParams, NetworkMode, RuntimeEnv, SandboxConfig,
-};
+use super::sandbox::{DeviceAccess, LaunchConfig, LaunchParams, NetworkMode, SandboxConfig};
 use super::sandbox_config::{
   INNER_APP_DIR, INNER_WINE_PREFIX, INNER_WINE_ROOT, current_timestamp_hex, find_nvidia_devices,
 };
 use super::wine::{SyncMode, UpscaleMode};
+use crate::system::display::X11Display;
+use crate::system::env::RuntimeEnv;
 use anyhow::Context;
-use std::env;
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
@@ -75,14 +73,8 @@ fn get_display_args(
 ) -> anyhow::Result<Vec<String>> {
   match display_protocol {
     DisplayProtocol::X11 => {
-      let x11_display = runtime_env
-        .x11_display
-        .clone()
-        .context("Unable to retrieve X11 display (DISPLAY environment variable)")?;
-      let xauthority_file = runtime_env
-        .xauthority_file
-        .clone()
-        .context("Unable to retrieve Xauthority file (XAUTHORITY environment variable)")?;
+      let x11_display = runtime_env.x11_display()?;
+      let xauthority_file = runtime_env.xauthority_file()?;
       let display = X11Display::from_str(&x11_display)?;
       let x11_socket = display.get_socket_path();
       // Mount X11 socket to allow running GUI apps. Using the same X11 display number as the host
@@ -91,23 +83,20 @@ fn get_display_args(
       Ok(vec![
         "--setenv".into(),
         "DISPLAY".into(),
-        x11_display,
+        x11_display.into(),
         "--setenv".into(),
         "XAUTHORITY".into(),
-        xauthority_file.clone(),
+        xauthority_file.into(),
         "--bind".into(),
         x11_socket.clone(),
         x11_socket,
         "--ro-bind".into(),
-        xauthority_file.clone(),
-        xauthority_file,
+        xauthority_file.into(),
+        xauthority_file.into(),
       ])
     }
     DisplayProtocol::Wayland => {
-      let wayland_display = runtime_env
-        .wayland_display
-        .clone()
-        .context("Unable to retrieve Wayland display (WAYLAND_DISPLAY environment variable)")?;
+      let wayland_display = runtime_env.wayland_display()?;
       let wayland_socket = format!("{}/{}", runtime_env.xdg_runtime_dir, wayland_display);
       // The DISPLAY env variable must not be set to tell wine to use Wayland.
       // https://gitlab.winehq.org/wine/wine/-/releases/wine-10.0#wayland-driver.
@@ -116,7 +105,7 @@ fn get_display_args(
       Ok(vec![
         "--setenv".into(),
         "WAYLAND_DISPLAY".into(),
-        wayland_display,
+        wayland_display.into(),
         "--bind".into(),
         wayland_socket.clone(),
         wayland_socket,
@@ -148,13 +137,14 @@ fn build_args(
     args.extend(["--uid", &uid, "--gid", &gid]);
   }
   if sandbox_config.namespace_isolation {
-    // Need to keep IPC namespace (i.e. no --unshare-ipc) because it breaks some GUI applications
+    // Need to keep IPC namespace (i.e. no --unshare-ipc) in X11 because it breaks some GUI apps
     // i.e. when quickly moving the mouse cursor over the WinRAR menu bar, the application will
     // crash with a "X Error of failed request:  BadValue (integer parameter out of range for
     // operation)" error.
-    // TODO: consider bringing back the --unshare-ipc parameter, it seems limited to X11, see also
-    // flatpak docs about the IPC issue.
     args.extend(["--unshare-pid", "--unshare-cgroup", "--unshare-user"]);
+    if matches!(sandbox_config.display_protocol, DisplayProtocol::Wayland) {
+      args.push("--unshare-ipc");
+    }
   }
   // Use a new UTS space, and a hostname based on the current timestamp.
   let timestamp = current_timestamp_hex();
@@ -291,10 +281,10 @@ fn build_args(
   }
   // Prefix needs to be read-write because some dependencies may be installed or system files change
   // while wine is running, even changing the registry requires write access.
-  if let Some(prefix_path) = &launch_config.prefix_path {
+  if let Some(prefix_info) = &launch_config.prefix_info {
     args.extend([
       "--bind",
-      prefix_path.to_str().context("Bad prefix path")?,
+      prefix_info.path.to_str().context("Bad prefix path")?,
       INNER_WINE_PREFIX,
     ]);
   }
@@ -313,9 +303,6 @@ fn build_args(
     "--setenv",
     "LANG",
     &runtime_env.lang,
-    "--setenv",
-    "DBUS_SESSION_BUS_ADDRESS",
-    &runtime_env.dbus_session_bus_address,
     "--setenv",
     "XDG_RUNTIME_DIR",
     &runtime_env.xdg_runtime_dir,
@@ -422,9 +409,24 @@ fn build_args(
   // args as Vec<&str> to make it easier to add elements (so we avoid String::from() or .into() on
   // each element), however args still needs to be converted to Vec<String> at the end.
   let mut final_args: Vec<String> = args.into_iter().map(String::from).collect();
-  let term = env::var("TERM").unwrap_or("xterm-256color".into());
-  let shell = env::var("SHELL").unwrap_or("bash".into());
-  let shell_params: Vec<String> = vec!["--setenv".into(), "TERM".into(), term, shell];
+  let shell_params: Vec<String> = vec![
+    "--setenv".into(),
+    "TERM".into(),
+    runtime_env.term.clone(),
+    runtime_env.shell.clone(),
+  ];
+  // Mount the app directory before additional volumes so volume mappings can override paths inside
+  // the app directory.
+  match &launch_config.launch_params {
+    LaunchParams::AppDirOnly { read_only, app_dir }
+    | LaunchParams::AppDirWithCommand {
+      read_only, app_dir, ..
+    } => {
+      let app_dir_args = get_app_dir_args(*read_only, app_dir.to_owned());
+      final_args.extend(app_dir_args);
+    }
+    LaunchParams::Unconfigured => (),
+  }
   // Additional mounts.
   let mount_args = get_mount_args(mount_mappings);
   final_args.extend(mount_args);
@@ -436,25 +438,35 @@ fn build_args(
       final_args.extend(["--chdir".into(), "/".into()]);
       final_args.extend(shell_params);
     }
-    LaunchParams::AppDirOnly { read_only, app_dir } => {
-      let app_dir_args = get_app_dir_args(*read_only, app_dir.to_owned());
-      final_args.extend(app_dir_args);
+    LaunchParams::AppDirOnly { .. } => {
       // Only app_dir was set (not app_bin), so start with default shell (useful for maintenance).
       final_args.extend(shell_params);
     }
     LaunchParams::AppDirWithCommand {
-      read_only,
-      app_dir,
-      app_bin,
-      app_args,
+      app_bin, app_args, ..
     } => {
-      let app_dir_args = get_app_dir_args(*read_only, app_dir.to_owned());
-      final_args.extend(app_dir_args);
       final_args.push(app_bin.to_owned());
       final_args.extend(app_args.clone());
     }
   }
   Ok(final_args)
+}
+
+pub fn prepare_args(
+  sandbox_config: &SandboxConfig,
+  launch_config: &LaunchConfig,
+  runtime_env: &RuntimeEnv,
+  mount_mappings: &[MountMapping],
+) -> anyhow::Result<(Vec<String>, NamedTempFile)> {
+  // Temporary file will be automatically removed when variable goes out of scope.
+  let temp_file = NamedTempFile::new()?;
+  let temp_file_path = temp_file
+    .path()
+    .to_str()
+    .context("Could not get temporary file path")?;
+  let args =
+    build_args(sandbox_config, launch_config, runtime_env, mount_mappings, temp_file_path)?;
+  Ok((args, temp_file))
 }
 
 /// Execute a program under a restricted Bubblewrap container, the output will be inherited by the
@@ -465,20 +477,7 @@ fn build_args(
 /// kinda independent of glibc and similar lower level stuff, however they still need the OS to
 /// provide the right dependencies, otherwise not even `notepad.exe` will run, to install these
 /// dependencies, just install `steam-native-runtime` on Arch/Manjaro.
-pub fn run(
-  sandbox_config: &SandboxConfig,
-  launch_config: &LaunchConfig,
-  runtime_env: &RuntimeEnv,
-  mount_mappings: &[MountMapping],
-) -> anyhow::Result<()> {
-  // Temporary file will be automatically removed when variable goes out of scope.
-  let temp_file = NamedTempFile::new()?;
-  let temp_file_path = temp_file
-    .path()
-    .to_str()
-    .context("Could not get temporary file path")?;
-  let args =
-    build_args(sandbox_config, launch_config, runtime_env, mount_mappings, temp_file_path)?;
+pub fn run(args: &[String]) -> anyhow::Result<()> {
   let mut cmd = Command::new("bwrap")
     .args(args)
     .stdout(Stdio::inherit())

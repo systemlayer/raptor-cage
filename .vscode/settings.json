@@ -30,6 +30,7 @@
     "Ntsync",
     "pipewire",
     "pulseaudio",
+    "rcage",
     "reqwest",
     "sandboxed",
     "setenv",
