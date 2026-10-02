@@ -180,6 +180,20 @@ cargo update
 cargo upgrade --dry-run
 ```
 
+### Internal branch-pushing workflow
+
+Prune stale remote-tracking branches before pushing. This avoids name collisions when, for example, a deleted `dev` branch would prevent creating `dev/new-feature`:
+
+```bash
+git remote prune origin
+```
+
+Push the current `HEAD` to a different remote branch without changing the current branch's upstream:
+
+```bash
+git push origin HEAD:dev/new-feature
+```
+
 ### TODOs
 
 #### General
@@ -197,18 +211,9 @@ cargo upgrade --dry-run
   * https://wiki.manjaro.org/index.php/Configure_Graphics_Cards
   * https://wiki.archlinux.org/title/Hybrid_graphics
   * https://wiki.archlinux.org/title/PRIME#Note_about_Windows_games
-* Detect dedicated GPU and enable `--gpu` param automatically
-
-| Environment Variable      | Purpose                                                      | Typical Values                        | Affects                              | Notes                                                                                          |
-|---------------------------|--------------------------------------------------------------|---------------------------------------|--------------------------------------|------------------------------------------------------------------------------------------------|
-| DRI_PRIME                 | Selects which GPU to use for rendering (in Mesa/DRI stack)   | 0 (default GPU), 1 (dGPU)             | Which GPU handles rendering          | Used mostly on systems using the Mesa driver; 1 for discrete GPU rendering.                    |
-| __NV_PRIME_RENDER_OFFLOAD | Enables NVIDIA's PRIME render offload mode                   | 1                                     | Activates NVIDIA render offload mode | Must be set to 1 to use NVIDIA GPU for rendering in hybrid setups.                             |
-| __GLX_VENDOR_LIBRARY_NAME | Specifies which GLX vendor library to load (GLX client side) | nvidia, mesa                          | Determines which GLX implementation  | Should be nvidia for NVIDIA offload; mesa for default integrated GPU. Required for proper GLX. |
-| __VK_LAYER_NV_optimus     | Ensures Vulkan applications use the correct GPU              | (empty), NVIDIA_only, non_NVIDIA_only | Vulkan applications                  | A value of NVIDIA_only causes to only report NVIDIA GPUs to the Vulkan application.            |
-| DXVK_FILTER_DEVICE_NAME   | Set the GPU used by DXVK                                     | (empty), (device_name)                | Games ran by DXVK                    | Get the card name from vulkaninfo; DXVK uses substring match.                                  |
-
-* Test with `DRI_PRIME=1 glxinfo | grep -E "OpenGL (vendor|renderer)"`, bear in mind that GPU may be powered-off on the first time, subsequent launches should be faster
-* The `prime-run` command is just a script that sets the aforementioned variables: https://gitlab.archlinux.org/archlinux/packaging/packages/nvidia-prime/-/blob/main/prime-run?ref_type=heads
+* Detect dedicated GPU and enable `--gpu` param automatically (check DRI_PRIME, __NV_PRIME_RENDER_OFFLOAD, __GLX_VENDOR_LIBRARY_NAME, __VK_LAYER_NV_optimus, DXVK_FILTER_DEVICE_NAME variables)
+  * Test with `DRI_PRIME=1 glxinfo | grep -E "OpenGL (vendor|renderer)"`, bear in mind that GPU may be powered-off on the first time, subsequent launches should be faster
+  * The `prime-run` command is just a script that sets the aforementioned variables: https://gitlab.archlinux.org/archlinux/packaging/packages/nvidia-prime/-/blob/main/prime-run?ref_type=heads
 
 #### Packaging
 
