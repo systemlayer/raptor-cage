@@ -28,7 +28,7 @@ pub fn wait_for_processes_to_exit(target_names: Vec<String>) -> anyhow::Result<(
     .into_iter()
     .map(|name| {
       let name_glob = Glob::new(&name)
-        .expect("Failed to parse glob expression")
+        .expect("process name should be a valid glob expression")
         .compile_matcher();
       (
         name,
@@ -94,7 +94,7 @@ pub fn run(
     .stdout(Stdio::inherit())
     .stderr(Stdio::inherit())
     .spawn()
-    .map_err(|e| anyhow::anyhow!("Could not spawn {}: {}", &program, e))?;
+    .map_err(|e| anyhow::anyhow!("could not spawn {}: {}", &program, e))?;
   // Unlike bwrap::run, there is no need to use cmd.wait() because we want to
   // wait for other processes not the one we just executed.
   println!(

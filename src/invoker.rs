@@ -24,7 +24,7 @@ fn parse_mappings(
   for volume in volumes {
     let vol = replace_placeholders(volume, placeholder_values)?;
     let mapping =
-      MountMapping::from_str(&vol).map_err(|e| anyhow::anyhow!("Volume error: {}", e))?;
+      MountMapping::from_str(&vol).map_err(|e| anyhow::anyhow!("volume error: {}", e))?;
     mappings.push(mapping);
   }
   Ok(mappings)
@@ -186,14 +186,14 @@ mod tests {
     let volumes = vec!["{{SOURCE}}:/sandbox".to_string()];
     let values = HashMap::from([("SOURCE".to_string(), "/".to_string())]);
     let error = parse_mappings(&volumes, &values).unwrap_err();
-    assert_eq!(error.to_string(), "Volume error: Path is not allowed: /");
+    assert_eq!(error.to_string(), "volume error: path is not allowed: /");
   }
 
   #[test]
   fn test_parse_mappings_rejects_unknown_placeholders() {
     let volumes = vec!["{{UNKNOWN}}:/sandbox".to_string()];
     let error = parse_mappings(&volumes, &HashMap::new()).unwrap_err();
-    assert_eq!(error.to_string(), "Unknown placeholder: {{UNKNOWN}}");
+    assert_eq!(error.to_string(), "unknown placeholder: {{UNKNOWN}}");
   }
 
   #[test]
@@ -264,7 +264,7 @@ pub async fn run(
   app_args: Option<Vec<String>>,
 ) -> anyhow::Result<()> {
   if runner_path.as_ref().xor(prefix_path.as_ref()).is_some() {
-    anyhow::bail!("Either both runner and prefix paths are required, or neither");
+    anyhow::bail!("either both runner and prefix paths are required, or neither");
   }
   let config = config::load()?;
   let sandbox_config = SandboxConfig {
@@ -314,7 +314,7 @@ pub async fn run(
   // automatically released when inhibit_handle is dropped.
   let inhibit_handle = inhibitor::inhibit_idle().await;
   if let Err(inhibit_error) = &inhibit_handle {
-    println!("Inhibition failed: {}", inhibit_error.to_string());
+    println!("Inhibition failed: {}", inhibit_error);
   }
   // Need to prefix _temp_file to acknowledge is not being used, if "_" is used alone, it will be
   // dropped immediately, thus the temporary file will be removed.

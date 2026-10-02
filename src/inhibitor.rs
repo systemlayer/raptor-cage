@@ -15,7 +15,7 @@ pub struct InhibitHandle {
 pub async fn inhibit_idle() -> anyhow::Result<InhibitHandle> {
   let connection = Connection::system()
     .await
-    .context("Failed to connect to D-Bus")?;
+    .context("failed to connect to D-Bus")?;
   let proxy = zbus::Proxy::new(
     &connection,
     "org.freedesktop.login1",         // Destination
@@ -23,7 +23,7 @@ pub async fn inhibit_idle() -> anyhow::Result<InhibitHandle> {
     "org.freedesktop.login1.Manager", // Interface
   )
   .await
-  .context("Failed to create D-Bus proxy")?;
+  .context("failed to create D-Bus proxy")?;
   let fd: OwnedFd = proxy
     .call(
       "Inhibit",
@@ -35,6 +35,6 @@ pub async fn inhibit_idle() -> anyhow::Result<InhibitHandle> {
       ),
     )
     .await
-    .context("D-Bus method call failed")?;
+    .context("method call to D-Bus failed")?;
   Ok(InhibitHandle { _fd: fd })
 }

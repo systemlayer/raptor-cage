@@ -26,7 +26,7 @@ fn config_paths() -> Vec<PathBuf> {
 }
 
 fn config_error(path: &Path, error: impl std::fmt::Display) -> anyhow::Error {
-  anyhow::anyhow!("Could not load configuration {}: {}", path.display(), error)
+  anyhow::anyhow!("could not load configuration {}: {}", path.display(), error)
 }
 
 fn load_from_paths<I>(paths: I) -> anyhow::Result<Config>

@@ -275,7 +275,7 @@ fn build_args(
       "--tmpfs",
       "/opt",
       "--ro-bind",
-      runner_path.to_str().context("Bad runner path")?,
+      runner_path.to_str().context("bad runner path")?,
       INNER_WINE_ROOT,
     ]);
   }
@@ -284,7 +284,7 @@ fn build_args(
   if let Some(prefix_info) = &launch_config.prefix_info {
     args.extend([
       "--bind",
-      prefix_info.path.to_str().context("Bad prefix path")?,
+      prefix_info.path.to_str().context("bad prefix path")?,
       INNER_WINE_PREFIX,
     ]);
   }
@@ -463,7 +463,7 @@ pub fn prepare_args(
   let temp_file_path = temp_file
     .path()
     .to_str()
-    .context("Could not get temporary file path")?;
+    .context("could not get temporary file path")?;
   let args =
     build_args(sandbox_config, launch_config, runtime_env, mount_mappings, temp_file_path)?;
   Ok((args, temp_file))
@@ -483,10 +483,10 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
     .stdout(Stdio::inherit())
     .stderr(Stdio::inherit())
     .spawn()
-    .map_err(|e| anyhow::anyhow!("Could not spawn bwrap: {}", e))?;
+    .map_err(|e| anyhow::anyhow!("could not spawn bwrap: {}", e))?;
   let status = cmd.wait()?;
   if status.success() {
     return Ok(());
   }
-  Err(anyhow::anyhow!("The bwrap command exited with non-zero exit code"))
+  Err(anyhow::anyhow!("the bwrap command exited with non-zero exit code"))
 }

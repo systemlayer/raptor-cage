@@ -2,7 +2,7 @@ use anyhow::Context;
 use std::{collections::HashMap, env};
 
 fn format_env_error(name: &str) -> String {
-  format!("Environment variable '{}' is not set or invalid", name)
+  format!("environment variable '{}' is not set or invalid", name)
 }
 
 /// Retrieves an env variable, the difference between this method and using

@@ -49,11 +49,11 @@ pub enum MountError {
 impl fmt::Display for MountError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      MountError::EmptyPath => write!(f, "Path must not be empty"),
+      MountError::EmptyPath => write!(f, "path must not be empty"),
       MountError::DisallowedPath(path) => {
-        write!(f, "Path is not allowed: {}", path.to_string_lossy())
+        write!(f, "path is not allowed: {}", path.to_string_lossy())
       }
-      MountError::InvalidFormat(value) => write!(f, "Invalid format: {}", value),
+      MountError::InvalidFormat(value) => write!(f, "invalid format: {}", value),
     }
   }
 }

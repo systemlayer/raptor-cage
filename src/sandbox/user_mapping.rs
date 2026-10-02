@@ -26,10 +26,10 @@ pub enum UserMappingError {
 impl fmt::Display for UserMappingError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      UserMappingError::InvalidFormat(s) => write!(f, "Expected UID:GID format, but got: {}", s),
-      UserMappingError::InvalidId(s) => write!(f, "Input is not a valid ID: {}", s),
+      UserMappingError::InvalidFormat(s) => write!(f, "expected UID:GID format, but got: {}", s),
+      UserMappingError::InvalidId(s) => write!(f, "input is not a valid ID: {}", s),
       UserMappingError::OutOfRangeId(id) => {
-        write!(f, "Value must be between {} and {}, but got {}", MIN_ID, MAX_ID, id)
+        write!(f, "value must be between {} and {}, but got {}", MIN_ID, MAX_ID, id)
       }
     }
   }
@@ -141,7 +141,7 @@ mod tests {
       assert_eq!(uid, 500_000);
       assert_eq!(gid, 600_000);
     } else {
-      panic!("Expected custom mapping");
+      panic!("expected custom mapping");
     }
   }
 }

@@ -16,12 +16,12 @@ pub enum UpscaleModeError {
 impl fmt::Display for UpscaleModeError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      UpscaleModeError::InvalidUpscaleMode(s) => write!(f, "Invalid upscale mode: {}", s),
-      UpscaleModeError::InvalidFsrMode(s) => write!(f, "Invalid FSR mode: {}", s),
-      UpscaleModeError::InvalidFsrStrength(s) => write!(f, "Invalid FSR strength: {}", s),
+      UpscaleModeError::InvalidUpscaleMode(s) => write!(f, "invalid upscale mode: {}", s),
+      UpscaleModeError::InvalidFsrMode(s) => write!(f, "invalid FSR mode: {}", s),
+      UpscaleModeError::InvalidFsrStrength(s) => write!(f, "invalid FSR strength: {}", s),
       UpscaleModeError::OutOfRangeFsrStrength(strength) => write!(
         f,
-        "FSR strength must be between {} and {}, but got {}",
+        "strength for FSR must be between {} and {}, but got {}",
         MIN_FSR_STRENGTH, MAX_FSR_STRENGTH, strength
       ),
     }
@@ -151,7 +151,7 @@ impl FromStr for SyncMode {
       "none" => Ok(SyncMode::None),
       "fsync" => Ok(SyncMode::Fsync),
       "esync" => Ok(SyncMode::Esync),
-      _ => Err(format!("Invalid sync mode: {}", s)),
+      _ => Err(format!("invalid sync mode: {}", s)),
     }
   }
 }
@@ -185,7 +185,7 @@ pub fn get_wine_user(wine_prefix: &Path, fallback_user: &str) -> io::Result<Stri
   if first_component_is_invalid || user_components.next().is_some() {
     return Err(io::Error::new(
       io::ErrorKind::InvalidData,
-      "Wine user must be a single path component",
+      "wine user must be a single path component",
     ));
   }
   Ok(user)
@@ -210,7 +210,7 @@ mod tests {
     for user in ["../player", "/player", ".", ""] {
       let error = get_wine_user(prefix.path(), user).err().unwrap();
       assert_eq!(error.kind(), io::ErrorKind::InvalidData);
-      assert_eq!(error.to_string(), "Wine user must be a single path component");
+      assert_eq!(error.to_string(), "wine user must be a single path component");
     }
   }
 

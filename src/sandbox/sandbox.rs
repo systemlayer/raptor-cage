@@ -16,7 +16,7 @@ impl FromStr for DisplayProtocol {
     match s.to_lowercase().as_str() {
       "x11" | "x" => Ok(DisplayProtocol::X11),
       "wayland" | "w" => Ok(DisplayProtocol::Wayland),
-      _ => Err(format!("Invalid display protocol: {}", s)),
+      _ => Err(format!("invalid display protocol: {}", s)),
     }
   }
 }
@@ -40,7 +40,7 @@ impl FromStr for NetworkMode {
       "full_access" | "full" | "f" => Ok(NetworkMode::FullAccess),
       "restricted_access" | "restricted" | "r" => Ok(NetworkMode::RestrictedAccess),
       "no_access" | "no" | "n" => Ok(NetworkMode::NoAccess),
-      _ => Err(format!("Invalid network mode: {}", s)),
+      _ => Err(format!("invalid network mode: {}", s)),
     }
   }
 }
@@ -59,7 +59,7 @@ impl FromStr for DeviceAccess {
     match s.to_lowercase().as_str() {
       "all" | "a" => Ok(DeviceAccess::All),
       "minimal" | "m" => Ok(DeviceAccess::Minimal),
-      _ => Err(format!("Invalid device access mode: {}", s)),
+      _ => Err(format!("invalid device access mode: {}", s)),
     }
   }
 }
@@ -117,7 +117,7 @@ fn map_wait_command(
       let current_exe = std::env::current_exe()
         .ok()
         .map(|path| path.to_string_lossy().to_string())
-        .expect("Failed to get executable name");
+        .expect("current executable path should be available");
       let mut new_args: Vec<String> = vec![
         "wait".into(),
         "-w".into(),
