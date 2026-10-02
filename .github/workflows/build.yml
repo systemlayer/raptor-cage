@@ -105,7 +105,7 @@ jobs:
         gh release create "$TAG_NAME" "dist/raptor-cage-${TAG_NAME}.tgz"
         --target "$GITHUB_SHA"
 
-  release_aur:
+  aur:
     # Keep AUR publishing in a separate job for finer-grained permissions: it needs
     # read access to this repository, but no contents write access.
     permissions:

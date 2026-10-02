@@ -1,6 +1,7 @@
 FROM rust:1.98.1-slim-trixie
 
 RUN useradd -m -d /builder -s /bin/bash builder
+ENV USER=builder HOME=/builder
 USER builder
 WORKDIR /builder
 
