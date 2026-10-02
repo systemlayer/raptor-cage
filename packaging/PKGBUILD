@@ -13,5 +13,5 @@ sha256sums_x86_64=('{{SHA256SUM}}')
 
 package() {
   cd "$srcdir/"
-  install -Dm755 raptor-cage "${pkgdir}/usr/bin/rcage"
+  install -Dm755 rcage "${pkgdir}/usr/bin/rcage"
 }
