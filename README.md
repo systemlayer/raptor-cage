@@ -6,8 +6,8 @@
   <p>
     Run games in a secure sandbox, various native and non-native titles are supported.
   </p>
-  <img alt="Downloads" src="https://img.shields.io/github/downloads/RX0FA/raptor-cage/total?style=flat-square&label=DOWNLOADS&labelColor=0567ff&color=696969" />
-  <img alt="Latest Release" src="https://img.shields.io/github/v/release/RX0FA/raptor-cage?style=flat-square&label=LATEST%20RELEASE&labelColor=0567ff&color=696969" />
+  <img alt="Downloads" src="https://img.shields.io/github/downloads/systemlayer/raptor-cage/total?style=flat-square&label=DOWNLOADS&labelColor=0567ff&color=696969" />
+  <img alt="Latest Release" src="https://img.shields.io/github/v/release/systemlayer/raptor-cage?style=flat-square&label=LATEST%20RELEASE&labelColor=0567ff&color=696969" />
   <img alt="AUR" src="https://img.shields.io/aur/version/raptor-cage-bin?style=flat-square&label=AUR&labelColor=0567ff&color=696969" />
 </div>
 
@@ -36,7 +36,7 @@ makepkg -sri
 ### Manual Installation
 
 ```bash
-download_url="$(curl -sL 'https://api.github.com/repos/RX0FA/raptor-cage/releases/latest' | grep -E 'browser_download_url.+\.tgz' | grep -oP '"browser_download_url": "\K[^"]+')"
+download_url="$(curl -sL 'https://api.github.com/repos/systemlayer/raptor-cage/releases/latest' | grep -E 'browser_download_url.+\.tgz' | grep -oP '"browser_download_url": "\K[^"]+')"
 curl -L -o raptor-cage.tgz "$download_url"
 tar xf raptor-cage.tgz
 sudo install -Dm755 raptor-cage "/usr/local/bin/rcage"
