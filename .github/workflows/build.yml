@@ -7,52 +7,156 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Give the automatic token read-only access unless a job explicitly requires more.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+permissions:
+  contents: read
+
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    # Pin the runner to Ubuntu 24.04 because newer images may break compatibility with Debian.
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idruns-on
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Pass the generated tag to the release job without granting this job write access.
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idoutputs
+    outputs:
+      program_version: ${{ steps.tag_step.outputs.program_version }}
+      tag_name: ${{ steps.tag_step.outputs.tag_name }}
     steps:
-    - uses: actions/checkout@v4
+
+    # Check out the source without persisting the token in the local Git configuration.
+    # https://github.com/actions/checkout#usage
+    - name: Checkout Source
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    # Build the release binary in the pinned container and package it for distribution.
     - name: Build
       run: |-
-        make docker-build
+        mkdir -p dist
+        docker build -f build.dockerfile . -t rcage-image
+        docker run --rm rcage-image cat /builder/target/release/raptor-cage > dist/rcage
+        chmod +x dist/rcage
+        tar czf dist/raptor-cage.tgz -C dist rcage
+
+    # Derive a timestamped tag, validate it, and expose it as a step output for later jobs.
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-an-output-parameter
     - name: Generate Tag
       id: tag_step
       run: |-
-        program_version=$(./dist/raptor-cage -V | awk '{print $2}')
+        program_version=$(./dist/rcage -V | awk '{print $2}')
+        if [[ ! "$program_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+          printf 'Invalid program version: %s.\n' "$program_version" >&2
+          exit 1
+        fi
         tag_name="${program_version}-$(date +%y%m%d%H%M)"
-        printf "tag_name=${tag_name}\nprogram_version=${program_version}\n" | tee -a "$GITHUB_OUTPUT"
-        mv dist/raptor-cage.tgz dist/raptor-cage-${tag_name}.tgz
-        mv dist/raptor-cage.sha256 dist/raptor-cage-${tag_name}.sha256
-    # https://github.com/ncipollo/release-action.
-    - uses: ncipollo/release-action@v1
-      id: release_step
+        mv dist/raptor-cage.tgz "dist/raptor-cage-${tag_name}.tgz"
+        (cd dist && sha256sum "raptor-cage-${tag_name}.tgz" > "raptor-cage-${tag_name}.sha256")
+        printf 'program_version=%s\ntag_name=%s\n' "$program_version" "$tag_name" >> "$GITHUB_OUTPUT"
+
+    # Persist release files so the isolated release job can download them safely.
+    # https://docs.github.com/en/actions/tutorials/store-and-share-data
+    - name: Upload Release Assets
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        artifacts: "dist/raptor-cage-${{ steps.tag_step.outputs.tag_name }}.tgz,dist/raptor-cage-${{ steps.tag_step.outputs.tag_name }}.sha256"
-        tag: ${{ steps.tag_step.outputs.tag_name }}
-        makeLatest: true
+        name: release-assets
+        compression-level: 0
+        retention-days: 1
+        path: |-
+          dist/raptor-cage-${{ steps.tag_step.outputs.tag_name }}.tgz
+          dist/raptor-cage-${{ steps.tag_step.outputs.tag_name }}.sha256
+        if-no-files-found: error
+
+  release:
+    # Grant repository write access only after the read-only build job succeeds.
+    # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idpermissions
+    permissions:
+      contents: write
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+
+    # Restore the exact files produced by the build job onto this job's fresh runner.
+    # https://docs.github.com/en/actions/tutorials/store-and-share-data#downloading-artifacts-during-a-workflow-run
+    - name: Download Release Assets
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: release-assets
+        path: dist
+
+    # Verify the downloaded archive against the checksum produced by the build job.
+    - name: Verify Release Assets
+      env:
+        TAG_NAME: ${{ needs.build.outputs.tag_name }}
+      working-directory: dist
+      run: sha256sum --check "raptor-cage-${TAG_NAME}.sha256"
+
+    # Create the tag and release at the triggering commit, then attach the binary archive.
+    # https://cli.github.com/manual/gh_release_create
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TAG_NAME: ${{ needs.build.outputs.tag_name }}
+      run: >-
+        gh release create "$TAG_NAME" "dist/raptor-cage-${TAG_NAME}.tgz"
+        --target "$GITHUB_SHA"
+
+  release_aur:
+    # Keep AUR publishing in a separate job for finer-grained permissions: it needs
+    # read access to this repository, but no contents write access.
+    permissions:
+      contents: read
+    needs: [build, release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+
+    # Check out the packaging templates without persisting the GitHub token.
+    - name: Checkout Source
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    # Restore the archive and checksum generated by the build job.
+    - name: Download Release Assets
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: release-assets
+        path: dist
+
+    # Verify the archive before using its checksum in the AUR package metadata.
+    - name: Verify Release Assets
+      env:
+        TAG_NAME: ${{ needs.build.outputs.tag_name }}
+      working-directory: dist
+      run: sha256sum --check "raptor-cage-${TAG_NAME}.sha256"
+
+    # Update the AUR package metadata and push it with the dedicated AUR key.
     - name: Publish to the AUR
       env:
         AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
+        PROGRAM_VERSION: ${{ needs.build.outputs.program_version }}
+        TAG_NAME: ${{ needs.build.outputs.tag_name }}
       run: |-
         mkdir -p ~/.ssh
         echo "aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN" >> ~/.ssh/known_hosts
         git -c init.defaultBranch=master clone https://aur.archlinux.org/raptor-cage-bin.git
         pkgbuild_pkgver=$(grep "^pkgver=" raptor-cage-bin/PKGBUILD | cut -d'=' -f2)
         pkgbuild_pkgrel=$(grep "^pkgrel=" raptor-cage-bin/PKGBUILD | cut -d'=' -f2)
-        current_version="${{ steps.tag_step.outputs.program_version }}"
-        if [ "$current_version" == "$pkgbuild_pkgver" ]; then
+        if [ "$PROGRAM_VERSION" == "$pkgbuild_pkgver" ]; then
           # Same version, so increase pkgbuild_pkgrel.
           ((pkgbuild_pkgrel++))
         else
           # Different version, so reset pkgbuild_pkgrel.
           pkgbuild_pkgrel=1
         fi
-        tag_name="${{ steps.tag_step.outputs.tag_name }}"
-        tgz_sha256=$(cat dist/raptor-cage-${tag_name}.sha256 | awk '{print $1}')
-        sed -e "s/{{VERSION}}/${current_version}/" -e "s/{{RELEASE}}/${pkgbuild_pkgrel}/" \
-          -e "s/{{TAG_NAME}}/${tag_name}/g" -e "s/{{SHA256SUM}}/${tgz_sha256}/" \
+        tgz_sha256=$(awk '{print $1}' "dist/raptor-cage-${TAG_NAME}.sha256")
+        sed -e "s/{{VERSION}}/${PROGRAM_VERSION}/" -e "s/{{RELEASE}}/${pkgbuild_pkgrel}/" \
+          -e "s/{{TAG_NAME}}/${TAG_NAME}/g" -e "s/{{SHA256SUM}}/${tgz_sha256}/" \
           packaging/PKGBUILD > raptor-cage-bin/PKGBUILD
         cp packaging/.gitignore raptor-cage-bin/.gitignore
         cd raptor-cage-bin
@@ -60,13 +164,11 @@ jobs:
           archlinux:latest bash \
           -c 'groupadd -g $user_gid user && useradd -M -s /bin/bash -u $user_uid -g $user_gid user && su user -c "makepkg --printsrcinfo > .SRCINFO"'
         git remote add aur ssh://aur@aur.archlinux.org/raptor-cage-bin.git
-        git config user.name RX0FA
-        git config user.email 174369883+RX0FA@users.noreply.github.com
+        git config user.name systemlayer
+        git config user.email 174369883+systemlayer@users.noreply.github.com
         git add .SRCINFO PKGBUILD .gitignore
-        git commit -m "Update build files ($tag_name)"
+        git commit -m "Update build files ($TAG_NAME)"
         key_file="${{ github.workspace }}/id_ed25519"
-        echo "$AUR_PRIVATE_KEY" > "$key_file"
+        printf '%s\n' "$AUR_PRIVATE_KEY" > "$key_file"
         chmod 600 "$key_file"
         GIT_SSH_COMMAND="ssh -i \"${key_file}\" -o IdentitiesOnly=yes" git push aur master
-        
-        

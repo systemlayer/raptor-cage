@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review Commit Range for PII"
+  short_description: "Audit a supplied Git commit range for PII"
+  default_prompt: "Use $review-unpublished-privacy to perform a read-only audit of <commit-range> for exposed personal data or suspicious PII handling."
+
+policy:
+  allow_implicit_invocation: false

@@ -17,4 +17,4 @@
 ## Checklist
 - [ ] I have performed a self-review of my own code.
 - [ ] My changes generate no errors/warnings/merge conflicts.
-- [ ] I have read the CLA and accept it's terms: [Contributor License Agreement](https://raw.githubusercontent.com/RX0FA/raptor-cage/refs/heads/master/CLA.md).
+- [ ] I have read the CLA and accept it's terms: [Contributor License Agreement](https://raw.githubusercontent.com/systemlayer/raptor-cage/refs/heads/master/CLA.md).
