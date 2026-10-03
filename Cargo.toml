@@ -9,16 +9,16 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.104"
-clap = { version = "4.6.5", features = ["derive"] }
-globset = "0.4.19"
+clap = { version = "4.6.7", features = ["derive"] }
+globset = "0.4.20"
 procfs = "0.18.0"
-rand = "0.8.7"
+rand = "0.8.8"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 tempfile = "3.27.0"
-toml = "1.1.4"
-tokio = { version = "1.53.1", features = ["full"] }
-zbus = { version = "5.18.0", default-features = false, features = ["tokio"] }
+toml = "1.1.6"
+tokio = { version = "1.53.2", features = ["full"] }
+zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
 
 [profile.release]
 codegen-units = 1
