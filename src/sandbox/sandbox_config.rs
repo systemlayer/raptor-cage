@@ -1,15 +1,4 @@
-use std::{
-  fs,
-  os::unix::fs::FileTypeExt,
-  time::{SystemTime, UNIX_EPOCH},
-};
-
-pub fn current_timestamp_hex() -> String {
-  let start = SystemTime::now();
-  let since_epoch = start.duration_since(UNIX_EPOCH).unwrap();
-  let seconds = since_epoch.as_secs();
-  format!("{:x}", seconds)
-}
+use std::{fs, os::unix::fs::FileTypeExt};
 
 pub fn find_nvidia_devices() -> anyhow::Result<Vec<String>> {
   let mut nvidia_devices = Vec::new();

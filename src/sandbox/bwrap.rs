@@ -2,13 +2,20 @@ use super::config::{DeviceAccess, DisplayProtocol, NetworkMode, SandboxConfig};
 use super::launch::{LaunchConfig, LaunchParams};
 use super::mount::MountMapping;
 use super::paths::{INNER_APP_DIR, INNER_WINE_PREFIX, INNER_WINE_ROOT};
-use super::sandbox_config::{current_timestamp_hex, find_nvidia_devices};
+use super::sandbox_config::find_nvidia_devices;
 use super::wine::{SyncMode, UpscaleMode};
 use crate::system::display::X11Display;
 use crate::system::env::RuntimeEnv;
 use anyhow::Context;
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
+
+fn current_timestamp_hex() -> String {
+  let start = std::time::SystemTime::now();
+  let since_epoch = start.duration_since(std::time::UNIX_EPOCH).unwrap();
+  let seconds = since_epoch.as_secs();
+  format!("{:x}", seconds)
+}
 
 /// Gets the corresponding bwrap parameters for the selected DeviceAccess option.
 pub fn get_device_args(device_access: &DeviceAccess) -> anyhow::Result<Vec<String>> {
