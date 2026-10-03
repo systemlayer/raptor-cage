@@ -83,9 +83,8 @@ Here, `{{GAMES_ROOT}}/some_game` resolves to `/mnt/games/some_game`. The save di
 
 The first existing configuration file is loaded from these locations, in order:
 
-1. `rcage.toml` in the current working directory.
-2. `$XDG_CONFIG_HOME/rcage.toml`, when `XDG_CONFIG_HOME` is set.
-3. `$HOME/.config/rcage.toml`.
+1. `$XDG_CONFIG_HOME/rcage.toml`, when `XDG_CONFIG_HOME` is set.
+2. `$HOME/.config/rcage.toml`.
 
 ### Run command enum parameters
 
