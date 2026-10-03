@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use std::fmt;
 use std::str::FromStr;
 
@@ -63,9 +63,9 @@ impl UserMapping {
     match self {
       UserMapping::None => None,
       UserMapping::Random => {
-        let mut rng = rand::thread_rng();
-        let random_uid = rng.gen_range(MIN_RANDOM_ID..=MAX_ID);
-        let random_gid = rng.gen_range(MIN_RANDOM_ID..=MAX_ID);
+        let mut rng = rand::rng();
+        let random_uid = rng.random_range(MIN_RANDOM_ID..=MAX_ID);
+        let random_gid = rng.random_range(MIN_RANDOM_ID..=MAX_ID);
         Some((random_uid, random_gid))
       }
       UserMapping::Custom(uid, gid) => Some((*uid, *gid)),
