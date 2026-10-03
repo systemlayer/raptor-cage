@@ -1,6 +1,6 @@
 <div align="center">
   <h1>raptor-cage</h1>
-  <p>Run native and Windows games in a secure sandbox.</p>
+  <p>Your machine. Your games. Your rules.</p>
   <img alt="Downloads" src="https://img.shields.io/github/downloads/systemlayer/raptor-cage/total?style=flat-square&label=DOWNLOADS&labelColor=0567ff&color=696969" />
   <img alt="Latest Release" src="https://img.shields.io/github/v/release/systemlayer/raptor-cage?style=flat-square&label=LATEST%20RELEASE&labelColor=0567ff&color=696969" />
   <img alt="AUR" src="https://img.shields.io/aur/version/raptor-cage-bin?style=flat-square&label=AUR&labelColor=0567ff&color=696969" />

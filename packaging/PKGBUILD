@@ -2,7 +2,7 @@
 pkgname=raptor-cage-bin
 pkgver={{VERSION}}
 pkgrel={{RELEASE}}
-pkgdesc='Run games in a secure sandbox'
+pkgdesc='Your machine, your games, your rules'
 url='https://github.com/systemlayer/raptor-cage'
 source_x86_64=("https://github.com/systemlayer/raptor-cage/releases/download/{{TAG_NAME}}/raptor-cage-{{TAG_NAME}}.tgz")
 arch=('x86_64')

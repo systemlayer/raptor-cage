@@ -1,6 +1,6 @@
 [package]
 name = "raptor-cage"
-description = "Run games in a secure sandbox"
+description = "Your machine, your games, your rules"
 version = "1.0.7"
 edition = "2024"
 license = "MIT"
