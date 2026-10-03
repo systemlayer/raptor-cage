@@ -1,5 +1,6 @@
 pub mod bottles;
 pub mod bwrap;
+pub mod config;
 pub mod mount;
 pub mod placeholder;
 pub mod sandbox;

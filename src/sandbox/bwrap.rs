@@ -1,6 +1,6 @@
+use super::config::{DeviceAccess, DisplayProtocol, NetworkMode, SandboxConfig};
 use super::mount::MountMapping;
-use super::sandbox::DisplayProtocol;
-use super::sandbox::{DeviceAccess, LaunchConfig, LaunchParams, NetworkMode, SandboxConfig};
+use super::sandbox::{LaunchConfig, LaunchParams};
 use super::sandbox_config::{
   INNER_APP_DIR, INNER_WINE_PREFIX, INNER_WINE_ROOT, current_timestamp_hex, find_nvidia_devices,
 };

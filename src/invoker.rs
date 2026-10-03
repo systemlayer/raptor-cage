@@ -2,11 +2,10 @@ use crate::{
   config, inhibitor,
   sandbox::{
     bottles, bwrap,
+    config::{DeviceAccess, DisplayProtocol, NetworkMode, SandboxConfig},
     mount::{MountConfig, MountMapping},
     placeholder::replace_placeholders,
-    sandbox::{
-      DeviceAccess, DisplayProtocol, LaunchConfig, LaunchParams, NetworkMode, SandboxConfig,
-    },
+    sandbox::{LaunchConfig, LaunchParams},
     sandbox_config::{INNER_APP_DIR, INNER_WINE_PREFIX},
     user_mapping::UserMapping,
     wine::{SyncMode, UpscaleMode, WinePrefixInfo},

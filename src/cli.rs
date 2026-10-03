@@ -1,7 +1,7 @@
 use crate::{
   list::Category,
   sandbox::{
-    sandbox::{DeviceAccess, DisplayProtocol, NetworkMode},
+    config::{DeviceAccess, DisplayProtocol, NetworkMode},
     user_mapping::UserMapping,
     wine::{SyncMode, UpscaleMode},
   },
