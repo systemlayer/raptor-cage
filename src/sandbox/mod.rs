@@ -5,6 +5,5 @@ pub mod launch;
 pub mod mount;
 pub mod paths;
 pub mod placeholder;
-pub mod sandbox_config;
 pub mod user_mapping;
 pub mod wine;
