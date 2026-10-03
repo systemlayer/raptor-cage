@@ -502,6 +502,7 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
 mod tests {
   use super::*;
   use crate::sandbox::user_mapping::UserMapping;
+  use std::collections::HashMap;
 
   #[test]
   fn prepared_args_keep_empty_file_alive_until_handle_is_dropped() -> anyhow::Result<()> {
@@ -520,7 +521,15 @@ mod tests {
       upscale_mode: None,
       sync_mode: None,
     };
-    let (args, file) = prepare_args(&sandbox, &launch, &RuntimeEnv::test_fixture(), &[])?;
+    let vars = HashMap::from([
+      ("HOME".into(), "/home/test".into()),
+      ("USER".into(), "test".into()),
+      ("XDG_RUNTIME_DIR".into(), "/run/user/1000".into()),
+      ("PATH".into(), "/usr/bin:/bin".into()),
+      ("WAYLAND_DISPLAY".into(), "wayland-0".into()),
+    ]);
+    let runtime_env = RuntimeEnv::from_map(&vars)?;
+    let (args, file) = prepare_args(&sandbox, &launch, &runtime_env, &[])?;
     let path = file.path().to_owned();
     assert!(
       args
