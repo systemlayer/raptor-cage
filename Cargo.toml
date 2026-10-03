@@ -13,7 +13,9 @@ clap = { version = "4.6.7", features = ["derive"] }
 globset = "0.4.20"
 procfs = "0.18.0"
 rand = "0.10.3"
-regex = "1.13.1"
+# The sole direct regex usage (the placeholder pattern in placeholder.rs) uses explicit ASCII
+# ranges, so no regex Unicode features are needed.
+regex = { version = "1.13.1", default-features = false, features = ["std", "perf"] }
 serde = { version = "1.0.229", features = ["derive"] }
 tempfile = "3.27.0"
 toml = "1.1.6"
