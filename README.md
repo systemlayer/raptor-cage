@@ -8,9 +8,9 @@
 
 ## Why sandbox your games?
 
-- Game developers can make mistakes or overlook security issues.
+- Game developers can make mistakes or overlook security issues. Your personal files shouldn't pay the price.
 - Even careful developers can be affected by vulnerabilities in their tools and dependencies, including supply-chain attacks.
-- Many games include tracking or data collection, sometimes built into the game engine.
+- Many games include tracking or data collection, sometimes built into the game engine. Paying customers shouldn't have to accept surveillance as part of the deal.
 
 ## Installation
 
@@ -130,7 +130,7 @@ raptor-cage uses Bubblewrap (`bwrap`) to create its sandboxes. You can use Bubbl
 
 ### Do I need Steam?
 
-Steam is not required to launch games with raptor-cage. The project aims to let you sandbox games without relying on proprietary launchers.
+Steam is not required to launch games with raptor-cage. The project aims to let you sandbox games without relying on proprietary launchers. Your computer belongs to you; a storefront shouldn't get to dictate how you use it.
 
 ### Why does the Arch Linux package depend on Steam?
 
