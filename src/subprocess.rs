@@ -14,9 +14,22 @@ const GRACE_PERIOD_LG: Duration = Duration::from_secs(5);
 /// Min time a process must be unseen to be considered exited.
 const GRACE_PERIOD_SM: Duration = Duration::from_secs(2);
 
+/// Tracks a process-name pattern and when it was last observed.
 struct ProcessState {
   last_seen: Instant,
   name_glob: GlobMatcher,
+}
+
+impl ProcessState {
+  /// Compiles the same name matcher used by process polling.
+  fn new(name: &str) -> Self {
+    Self {
+      last_seen: Instant::now(),
+      name_glob: Glob::new(name)
+        .expect("process name should be a valid glob expression")
+        .compile_matcher(),
+    }
+  }
 }
 
 /// Waits until all target process names have not been seen for at least `GRACE_PERIOD_{SM,LG}`.
@@ -27,16 +40,8 @@ pub fn wait_for_processes_to_exit(target_names: Vec<String>) -> anyhow::Result<(
   let mut process_states: HashMap<String, ProcessState> = target_names
     .into_iter()
     .map(|name| {
-      let name_glob = Glob::new(&name)
-        .expect("process name should be a valid glob expression")
-        .compile_matcher();
-      (
-        name,
-        ProcessState {
-          last_seen: Instant::now(),
-          name_glob,
-        },
-      )
+      let state = ProcessState::new(&name);
+      (name, state)
     })
     .collect();
   loop {
@@ -82,6 +87,41 @@ pub fn wait_for_processes_to_exit(target_names: Vec<String>) -> anyhow::Result<(
     sleep(POLL_INTERVAL);
   }
   Ok(())
+}
+
+/// Checks process discovery, matching, and launch errors.
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn process_patterns_match_command_lines() -> anyhow::Result<()> {
+    let pattern = ProcessState::new("*game*.exe");
+    assert!(pattern.name_glob.is_match("/games/mygame.exe"));
+    assert!(!pattern.name_glob.is_match("/apps/other.exe"));
+    let process = all_processes()?
+      .filter_map(Result::ok)
+      .find(|process| process.pid as u32 == std::process::id())
+      .expect("the test process should appear in procfs");
+    let cmdline = process.cmdline()?;
+    assert_eq!(cmdline.first(), std::env::args().next().as_ref());
+    assert!(ProcessState::new("*").name_glob.is_match(&cmdline[0]));
+    Ok(())
+  }
+
+  #[test]
+  fn missing_executable_returns_an_error() -> anyhow::Result<()> {
+    let directory = tempfile::tempdir()?;
+    let program = directory
+      .path()
+      .join("missing")
+      .to_string_lossy()
+      .into_owned();
+    let error = run(Vec::new(), program.clone(), None).unwrap_err();
+    assert!(error.to_string().contains(&program));
+    assert!(error.to_string().contains("could not spawn"));
+    Ok(())
+  }
 }
 
 pub fn run(
