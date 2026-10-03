@@ -4,10 +4,6 @@ use std::{
   time::{SystemTime, UNIX_EPOCH},
 };
 
-pub const INNER_WINE_ROOT: &str = "/opt/wine";
-pub const INNER_WINE_PREFIX: &str = "/var/lib/wine";
-pub const INNER_APP_DIR: &str = "/app";
-
 pub fn current_timestamp_hex() -> String {
   let start = SystemTime::now();
   let since_epoch = start.duration_since(UNIX_EPOCH).unwrap();

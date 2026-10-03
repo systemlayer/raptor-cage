@@ -3,6 +3,7 @@ pub mod bwrap;
 pub mod config;
 pub mod launch;
 pub mod mount;
+pub mod paths;
 pub mod placeholder;
 pub mod sandbox_config;
 pub mod user_mapping;

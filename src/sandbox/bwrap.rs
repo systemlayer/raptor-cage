@@ -1,9 +1,8 @@
 use super::config::{DeviceAccess, DisplayProtocol, NetworkMode, SandboxConfig};
 use super::launch::{LaunchConfig, LaunchParams};
 use super::mount::MountMapping;
-use super::sandbox_config::{
-  INNER_APP_DIR, INNER_WINE_PREFIX, INNER_WINE_ROOT, current_timestamp_hex, find_nvidia_devices,
-};
+use super::paths::{INNER_APP_DIR, INNER_WINE_PREFIX, INNER_WINE_ROOT};
+use super::sandbox_config::{current_timestamp_hex, find_nvidia_devices};
 use super::wine::{SyncMode, UpscaleMode};
 use crate::system::display::X11Display;
 use crate::system::env::RuntimeEnv;
