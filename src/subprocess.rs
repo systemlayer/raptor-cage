@@ -137,7 +137,7 @@ pub fn run(
     .map_err(|e| anyhow::anyhow!("could not spawn {}: {}", &program, e))?;
   // Unlike bwrap::run, there is no need to use cmd.wait() because we want to
   // wait for other processes not the one we just executed.
-  println!(
+  eprintln!(
     "Waiting for the following process(es) to terminate:\n{}",
     process_names
       .iter()
@@ -147,6 +147,6 @@ pub fn run(
   );
   let num_processes = process_names.len();
   wait_for_processes_to_exit(process_names)?;
-  println!("Finished waiting for {} process(es)", num_processes);
+  eprintln!("Finished waiting for {} process(es)", num_processes);
   Ok(())
 }

@@ -313,14 +313,14 @@ pub async fn run(
   // automatically released when inhibit_handle is dropped.
   let inhibit_handle = inhibitor::inhibit_idle().await;
   if let Err(inhibit_error) = &inhibit_handle {
-    println!("Inhibition failed: {}", inhibit_error);
+    eprintln!("Inhibition failed: {}", inhibit_error);
   }
   // Need to prefix _temp_file to acknowledge is not being used, if "_" is used alone, it will be
   // dropped immediately, thus the temporary file will be removed.
   let (args, _temp_file) =
     bwrap::prepare_args(&sandbox_config, &launch_config, &runtime_env, &mount_mappings)?;
   if verbose {
-    println!("Arguments: {}", join_args(&args));
+    eprintln!("Arguments: {}", join_args(&args));
   }
   bwrap::run(&args)
 }
