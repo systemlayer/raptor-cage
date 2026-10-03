@@ -7,7 +7,10 @@ use crate::system::devices::find_nvidia_devices;
 use crate::system::display::X11Display;
 use crate::system::env::RuntimeEnv;
 use anyhow::Context;
-use std::process::{Command, Stdio};
+use std::{
+  path::PathBuf,
+  process::{Command, Stdio},
+};
 use tempfile::NamedTempFile;
 
 fn current_timestamp_hex() -> String {
@@ -15,6 +18,18 @@ fn current_timestamp_hex() -> String {
   let since_epoch = start.duration_since(std::time::UNIX_EPOCH).unwrap();
   let seconds = since_epoch.as_secs();
   format!("{:x}", seconds)
+}
+
+/// Builds device binding arguments, rejecting paths that cannot be represented as UTF-8.
+fn get_device_bind_args(devices: &[PathBuf]) -> anyhow::Result<Vec<String>> {
+  let mut args = Vec::with_capacity(devices.len() * 3);
+  for device in devices {
+    let path = device
+      .to_str()
+      .with_context(|| format!("device path is not valid utf-8: {}", device.display()))?;
+    args.extend(["--dev-bind".to_owned(), path.to_owned(), path.to_owned()]);
+  }
+  Ok(args)
 }
 
 /// Gets the corresponding bwrap parameters for the selected DeviceAccess option.
@@ -28,16 +43,12 @@ pub fn get_device_args(device_access: &DeviceAccess) -> anyhow::Result<Vec<Strin
     DeviceAccess::Minimal => {
       let nvidia_devices = find_nvidia_devices()?;
       // TODO: check if /dev/snd/seq is needed.
-      let mut devices: Vec<String> = vec!["/dev/input", "/dev/uinput", "/dev/dri"]
+      let mut devices: Vec<PathBuf> = vec!["/dev/input", "/dev/uinput", "/dev/dri"]
         .into_iter()
-        .map(String::from)
+        .map(PathBuf::from)
         .collect();
       devices.extend(nvidia_devices);
-      let args: Vec<String> = devices
-        .into_iter()
-        .flat_map(|d| vec!["--dev-bind".to_string(), d.to_owned(), d.to_owned()])
-        .collect();
-      Ok(args)
+      get_device_bind_args(&devices)
     }
   }
 }
@@ -497,12 +508,36 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
   Err(anyhow::anyhow!("the bwrap command exited with non-zero exit code"))
 }
 
-/// Checks temporary-file ownership during sandbox argument preparation.
+/// Checks device binding arguments and temporary-file ownership during argument preparation.
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::sandbox::user_mapping::UserMapping;
-  use std::collections::HashMap;
+  use std::{collections::HashMap, ffi::OsStr, os::unix::ffi::OsStrExt};
+
+  #[test]
+  fn device_bind_args_preserve_paths_and_order() -> anyhow::Result<()> {
+    let devices = [PathBuf::from("/dev/input"), PathBuf::from("/dev/nvidia0")];
+    assert_eq!(
+      get_device_bind_args(&devices)?,
+      vec![
+        "--dev-bind",
+        "/dev/input",
+        "/dev/input",
+        "--dev-bind",
+        "/dev/nvidia0",
+        "/dev/nvidia0"
+      ]
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn device_bind_args_reject_non_utf8_paths() {
+    let device = PathBuf::from(OsStr::from_bytes(b"/dev/nvidia\xff"));
+    let error = get_device_bind_args(&[device.clone()]).unwrap_err();
+    assert_eq!(error.to_string(), format!("device path is not valid utf-8: {}", device.display()));
+  }
 
   #[test]
   fn prepared_args_keep_empty_file_alive_until_handle_is_dropped() -> anyhow::Result<()> {
