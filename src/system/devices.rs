@@ -1,4 +1,4 @@
-use std::{fs, os::unix::fs::FileTypeExt};
+use std::{fs, os::unix::fs::FileTypeExt, path::Path};
 
 /// Finds NVIDIA character device paths in the top level of `/dev`.
 ///
@@ -8,8 +8,13 @@ use std::{fs, os::unix::fs::FileTypeExt};
 /// `/dev/nvidiactl` and `/dev/nvidia-uvm`. Symbolic links to character devices also
 /// qualify; the returned path names the link, not its target.
 pub fn find_nvidia_devices() -> anyhow::Result<Vec<String>> {
+  find_nvidia_devices_in(Path::new("/dev"))
+}
+
+/// Scans a supplied directory using the production device filtering rules.
+fn find_nvidia_devices_in(directory: &Path) -> anyhow::Result<Vec<String>> {
   let mut nvidia_devices = Vec::new();
-  let entries = fs::read_dir("/dev")?;
+  let entries = fs::read_dir(directory)?;
   for entry in entries.flatten() {
     let path = entry.path();
     let metadata = path.metadata()?;
@@ -27,4 +32,33 @@ pub fn find_nvidia_devices() -> anyhow::Result<Vec<String>> {
     }
   }
   Ok(nvidia_devices)
+}
+
+/// Checks device filtering and filesystem error propagation.
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::os::unix::fs::symlink;
+
+  #[test]
+  fn includes_only_nvidia_character_devices() -> anyhow::Result<()> {
+    let directory = tempfile::tempdir()?;
+    let device = directory.path().join("nvidia0");
+    symlink("/dev/null", &device)?;
+    symlink("/dev/null", directory.path().join("other"))?;
+    fs::write(directory.path().join("nvidia-regular"), "")?;
+    assert_eq!(find_nvidia_devices_in(directory.path())?, vec![device.to_string_lossy()]);
+    Ok(())
+  }
+
+  #[test]
+  fn missing_device_directory_returns_io_error() -> anyhow::Result<()> {
+    let directory = tempfile::tempdir()?;
+    let error = find_nvidia_devices_in(&directory.path().join("missing")).unwrap_err();
+    assert_eq!(
+      error.downcast_ref::<std::io::Error>().unwrap().kind(),
+      std::io::ErrorKind::NotFound
+    );
+    Ok(())
+  }
 }

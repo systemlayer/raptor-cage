@@ -98,8 +98,9 @@ mod tests {
   #[test]
   fn test_invalid_display_number() {
     let display_str = ":abc";
-    let result = X11Display::from_str(display_str);
-    assert!(result.is_err());
+    let error = X11Display::from_str(display_str).unwrap_err();
+    assert_eq!(error.to_string(), "invalid display number: abc");
+    assert!(error.downcast_ref::<std::num::ParseIntError>().is_some());
   }
 
   #[test]

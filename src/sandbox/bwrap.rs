@@ -496,3 +496,40 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
   }
   Err(anyhow::anyhow!("the bwrap command exited with non-zero exit code"))
 }
+
+/// Checks temporary-file ownership during sandbox argument preparation.
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::sandbox::user_mapping::UserMapping;
+
+  #[test]
+  fn prepared_args_keep_empty_file_alive_until_handle_is_dropped() -> anyhow::Result<()> {
+    let sandbox = SandboxConfig {
+      namespace_isolation: true,
+      user_mapping: UserMapping::None,
+      display_protocol: DisplayProtocol::Wayland,
+      network_mode: NetworkMode::NoAccess,
+      device_access: DeviceAccess::All,
+      verbose: false,
+    };
+    let launch = LaunchConfig {
+      runner_path: None,
+      prefix_info: None,
+      launch_params: LaunchParams::Unconfigured,
+      upscale_mode: None,
+      sync_mode: None,
+    };
+    let (args, file) = prepare_args(&sandbox, &launch, &RuntimeEnv::test_fixture(), &[])?;
+    let path = file.path().to_owned();
+    assert!(
+      args
+        .windows(3)
+        .any(|args| args == ["--ro-bind", path.to_str().unwrap(), "/etc/hostname"])
+    );
+    assert_eq!(std::fs::read(&path)?, Vec::<u8>::new());
+    drop(file);
+    assert!(!path.exists());
+    Ok(())
+  }
+}

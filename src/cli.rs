@@ -109,3 +109,90 @@ pub struct Cli {
   #[command(subcommand)]
   pub command: Commands,
 }
+
+/// Checks command parsing at the Clap boundary.
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::error::ErrorKind;
+
+  #[test]
+  fn parses_run_and_wait_options() -> anyhow::Result<()> {
+    let cli = Cli::try_parse_from([
+      "rcage",
+      "run",
+      "-e",
+      "A=1",
+      "-e",
+      "B=2",
+      "-v",
+      "/games:/games",
+      "-v",
+      "/saves:/saves:rw",
+      "-w",
+      "game.exe,helper.exe",
+      "-u",
+      "500000:600000",
+      "--",
+      "--fullscreen",
+    ])?;
+    let Commands::Run {
+      environment,
+      volumes,
+      process_names,
+      user_mapping,
+      display_protocol,
+      network_mode,
+      device_access,
+      upscale_mode,
+      sync_mode,
+      app_args,
+      ..
+    } = cli.command
+    else {
+      panic!("run command should parse as run");
+    };
+    assert_eq!(environment, ["A=1", "B=2"]);
+    assert_eq!(volumes, ["/games:/games", "/saves:/saves:rw"]);
+    assert_eq!(process_names.unwrap(), ["game.exe", "helper.exe"]);
+    assert!(matches!(user_mapping, UserMapping::Custom(500_000, 600_000)));
+    assert!(matches!(display_protocol, DisplayProtocol::X11));
+    assert!(matches!(network_mode, NetworkMode::NoAccess));
+    assert!(matches!(device_access, DeviceAccess::Minimal));
+    assert!(matches!(upscale_mode, UpscaleMode::None));
+    assert!(matches!(sync_mode, SyncMode::None));
+    assert_eq!(app_args.unwrap(), ["--fullscreen"]);
+    let cli = Cli::try_parse_from([
+      "rcage",
+      "wait",
+      "-w",
+      "game.exe,helper.exe",
+      "wine",
+      "--",
+      "--version",
+    ])?;
+    let Commands::Wait {
+      process_names,
+      program,
+      args,
+    } = cli.command
+    else {
+      panic!("wait command should parse as wait");
+    };
+    assert_eq!(process_names, ["game.exe", "helper.exe"]);
+    assert_eq!(program, "wine");
+    assert_eq!(args.unwrap(), ["--version"]);
+    Ok(())
+  }
+
+  #[test]
+  fn rejects_invalid_command_options() {
+    for (args, kind) in [
+      (vec!["rcage", "list", "--category", "invalid"], ErrorKind::ValueValidation),
+      (vec!["rcage", "wait", "wine"], ErrorKind::MissingRequiredArgument),
+      (vec!["rcage", "run", "--user-mapping", "invalid"], ErrorKind::ValueValidation),
+    ] {
+      assert_eq!(Cli::try_parse_from(args).unwrap_err().kind(), kind);
+    }
+  }
+}
