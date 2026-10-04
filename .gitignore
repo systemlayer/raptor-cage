@@ -6,5 +6,6 @@ dist/
 id_ed25519
 
 # Other files
-*.ignore.txt
+*.ignore.md
 *.ignore.py
+*.ignore.txt

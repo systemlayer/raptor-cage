@@ -13,8 +13,10 @@
 
 ## User-facing output
 
-- Capitalize user-facing `println!` and `eprintln!` messages as normal sentences, with appropriate punctuation. Write error messages and `.context(...)` text in lowercase without trailing punctuation so chained errors read naturally.
-- In user-facing output, write numeric values directly next to abbreviated units (for example, `2.34s` and `100ms`).
+- Send program results and output intended for scripts to stdout (`println!` or `print!`). Send diagnostics and errors to stderr (`eprintln!` or `eprint!`).
+- Treat internal state, timing, fallbacks, retries, process IDs, cleanup, and troubleshooting details as diagnostics unless they are part of the program's expected output.
+- Use normal sentence capitalization and punctuation for user-facing prose. Keep error messages and `.context(...)` text lowercase without trailing punctuation so chained errors read naturally.
+- Write numbers directly next to abbreviated units (for example, `2.34s` and `100ms`).
 
 ## Code organization
 
@@ -25,4 +27,5 @@
 
 ## Git safety
 
+- Never execute `git push` commands under any circumstances.
 - Never perform Git write operations. Do not stage or commit changes, modify branches, tags, refs, the index, or repository configuration, or run any command that mutates Git state.

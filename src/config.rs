@@ -14,8 +14,13 @@ pub struct Config {
   pub placeholders: HashMap<String, String>,
 }
 
+/// Lists configuration candidates, trusting the current directory only in development builds.
 fn config_paths() -> Vec<PathBuf> {
-  let mut paths = vec![PathBuf::from(CONFIG_FILE_NAME)];
+  let mut paths = Vec::new();
+  // For security, production builds ignore rcage.toml in the current directory:
+  // a malicious configuration file could override mount paths through placeholders.
+  #[cfg(debug_assertions)]
+  paths.push(PathBuf::from(CONFIG_FILE_NAME));
   if let Some(config_home) = std::env::var_os("XDG_CONFIG_HOME") {
     paths.push(PathBuf::from(config_home).join(CONFIG_FILE_NAME));
   }
@@ -26,7 +31,7 @@ fn config_paths() -> Vec<PathBuf> {
 }
 
 fn config_error(path: &Path, error: impl std::fmt::Display) -> anyhow::Error {
-  anyhow::anyhow!("Could not load configuration {}: {}", path.display(), error)
+  anyhow::anyhow!("could not load configuration {}: {}", path.display(), error)
 }
 
 fn load_from_paths<I>(paths: I) -> anyhow::Result<Config>
@@ -54,6 +59,28 @@ mod tests {
 
   fn write_config(path: &Path, contents: &str) {
     fs::write(path, contents).unwrap();
+  }
+
+  #[test]
+  fn configuration_paths_respect_build_trust_policy() {
+    let paths = config_paths();
+    let local_path = PathBuf::from(CONFIG_FILE_NAME);
+    let user_paths = if cfg!(debug_assertions) {
+      assert_eq!(paths.first(), Some(&local_path));
+      &paths[1..]
+    } else {
+      assert!(!paths.contains(&local_path));
+      &paths[..]
+    };
+    let expected_user_paths: Vec<PathBuf> = std::env::var_os("XDG_CONFIG_HOME")
+      .map(|config_home| PathBuf::from(config_home).join(CONFIG_FILE_NAME))
+      .into_iter()
+      .chain(
+        std::env::var_os("HOME")
+          .map(|home| PathBuf::from(home).join(".config").join(CONFIG_FILE_NAME)),
+      )
+      .collect();
+    assert_eq!(user_paths, expected_user_paths);
   }
 
   #[test]

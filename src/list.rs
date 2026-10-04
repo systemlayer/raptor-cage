@@ -15,7 +15,7 @@ impl FromStr for Category {
       "all" | "a" => Ok(Category::All),
       "prefixes" | "p" => Ok(Category::PrefixesOnly),
       "runners" | "r" => Ok(Category::RunnersOnly),
-      _ => Err(format!("Invalid category: {}", s)),
+      _ => Err(format!("invalid category: {}", s)),
     }
   }
 }

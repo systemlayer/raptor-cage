@@ -2,7 +2,7 @@ use anyhow::Context;
 use std::{collections::HashMap, env};
 
 fn format_env_error(name: &str) -> String {
-  format!("Environment variable '{}' is not set or invalid", name)
+  format!("environment variable '{}' is not set or invalid", name)
 }
 
 /// Retrieves an env variable, the difference between this method and using
@@ -37,6 +37,35 @@ pub struct RuntimeEnv {
 }
 
 impl RuntimeEnv {
+  #[cfg(test)]
+  pub fn from_map(vars: &HashMap<String, String>) -> anyhow::Result<Self> {
+    let required = |name: &str| {
+      vars
+        .get(name)
+        .cloned()
+        .with_context(|| format_env_error(name))
+    };
+    Ok(Self {
+      home_dir: required("HOME")?,
+      user_name: required("USER")?,
+      lang: vars
+        .get("LANG")
+        .cloned()
+        .unwrap_or_else(|| "en_US.UTF-8".into()),
+      xdg_runtime_dir: required("XDG_RUNTIME_DIR")?,
+      original_path: required("PATH")?,
+      x11_display: vars.get("DISPLAY").cloned(),
+      xauthority_file: vars.get("XAUTHORITY").cloned(),
+      wayland_display: vars.get("WAYLAND_DISPLAY").cloned(),
+      term: vars
+        .get("TERM")
+        .cloned()
+        .unwrap_or_else(|| "xterm-256color".into()),
+      shell: vars.get("SHELL").cloned().unwrap_or_else(|| "bash".into()),
+      overrides: None,
+    })
+  }
+
   pub fn from_env() -> anyhow::Result<Self> {
     let home_dir = get_env_var("HOME")?;
     let user_name = get_env_var("USER")?;

@@ -20,7 +20,7 @@ impl X11Display {
   pub fn from_str(display: &str) -> anyhow::Result<Self> {
     let parts: Vec<&str> = display.split(':').collect();
     if parts.len() != 2 {
-      anyhow::bail!("Invalid DISPLAY format: {}", display);
+      anyhow::bail!("invalid DISPLAY format: {}", display);
     }
     let hostname: Option<String> = if !parts[0].is_empty() {
       Some(parts[0].into())
@@ -30,12 +30,12 @@ impl X11Display {
     let display_screen: Vec<&str> = parts[1].split('.').collect();
     let display_number = display_screen[0]
       .parse::<u32>()
-      .with_context(|| format!("Invalid display number: {}", display_screen[0]))?;
+      .with_context(|| format!("invalid display number: {}", display_screen[0]))?;
     let screen_number = if display_screen.len() > 1 {
       Some(
         display_screen[1]
           .parse::<u32>()
-          .with_context(|| format!("Invalid screen number: {}", display_screen[1]))?,
+          .with_context(|| format!("invalid screen number: {}", display_screen[1]))?,
       )
     } else {
       None
@@ -61,7 +61,7 @@ mod tests {
   #[test]
   fn test_valid_display_with_hostname() {
     let display_str = "localhost:0.0";
-    let display = X11Display::from_str(display_str).expect("Failed to parse display");
+    let display = X11Display::from_str(display_str).expect("valid display should parse");
     assert_eq!(display.hostname, Some("localhost".to_string()));
     assert_eq!(display.display_number, 0);
     assert_eq!(display.screen_number, Some(0));
@@ -71,7 +71,7 @@ mod tests {
   #[test]
   fn test_valid_display_without_hostname() {
     let display_str = ":1.2";
-    let display = X11Display::from_str(display_str).expect("Failed to parse display");
+    let display = X11Display::from_str(display_str).expect("valid display should parse");
     assert_eq!(display.hostname, None);
     assert_eq!(display.display_number, 1);
     assert_eq!(display.screen_number, Some(2));
@@ -81,7 +81,7 @@ mod tests {
   #[test]
   fn test_display_without_screen_number() {
     let display_str = ":2";
-    let display = X11Display::from_str(display_str).expect("Failed to parse display");
+    let display = X11Display::from_str(display_str).expect("valid display should parse");
     assert_eq!(display.hostname, None);
     assert_eq!(display.display_number, 2);
     assert_eq!(display.screen_number, None);
@@ -98,8 +98,9 @@ mod tests {
   #[test]
   fn test_invalid_display_number() {
     let display_str = ":abc";
-    let result = X11Display::from_str(display_str);
-    assert!(result.is_err());
+    let error = X11Display::from_str(display_str).unwrap_err();
+    assert_eq!(error.to_string(), "invalid display number: abc");
+    assert!(error.downcast_ref::<std::num::ParseIntError>().is_some());
   }
 
   #[test]

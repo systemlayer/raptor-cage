@@ -12,7 +12,7 @@ RUN apt-get update &&\
 USER vscode
 RUN cargo install cargo-audit cargo-edit
 RUN printf 'set -g mouse on\n' > ~/.tmux.conf &&\
-    printf '\nexport EDITOR=nvim\n' >> ~/.bashrc
+    printf '\nPS1="${PS1::-2}\\n$ "\nexport EDITOR=nvim\n' >> ~/.bashrc
 # Go back to the default Dockerfile user (can be checked with "whoami" during
 # build), terminal and other processes will still run as vscode.
 USER root

@@ -23,13 +23,13 @@ pub fn replace_placeholders(
     let full = caps.get(0).unwrap();
     let key = caps.get(1).unwrap().as_str();
     if input[..full.start()].ends_with('{') || input[full.end()..].starts_with('}') {
-      anyhow::bail!("Input contains malformed placeholder")
+      anyhow::bail!("input contains malformed placeholder")
     }
     // Append text before the placeholder.
     output.push_str(&input[last_end..full.start()]);
     let value = values
       .get(key)
-      .ok_or_else(|| anyhow::anyhow!("Unknown placeholder: {{{{{}}}}}", key))?;
+      .ok_or_else(|| anyhow::anyhow!("unknown placeholder: {{{{{}}}}}", key))?;
     // Append value and update last_end.
     output.push_str(value);
     last_end = full.end();
@@ -38,7 +38,7 @@ pub fn replace_placeholders(
   output.push_str(&input[last_end..]);
   // Any remaining delimiter will be considered a malformed placeholder.
   if output.contains("{{") || output.contains("}}") {
-    anyhow::bail!("Input contains malformed placeholder")
+    anyhow::bail!("input contains malformed placeholder")
   }
   Ok(output)
 }
